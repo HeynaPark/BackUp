@@ -47,6 +47,7 @@ Mat warp;		//그려질 평면
 //Mat img = imread("000126.jpg");
 
 
+vector<int> selTime(10);
 // POINT
 vector<Point> selPoint(10);
 vector<Point> wPoint(10);
@@ -73,12 +74,11 @@ int color_l = 5;
 //parameter
 int line_type = 1;			// 1.solid	2.dotted(1)	3.dotted(2)
 int circle_type = 0;		// 1.spin	2.ring	3.dotted	4.solid(fill)
-int thick = 4;
+int thick = 2;
 int spin = 0;		//spin circle parameter
 
 
 int cnt = 1;
-
 
 int fps = 30;
 
@@ -87,17 +87,10 @@ int time_ani = 15;
 String SetWindow = "Settings";
 //int alpha = 0;
 
-
-
 //int num = 19;
 //string dsc[19] = {};
-
-
 //Mat flag = imread("korea.png");
 //Mat inner = imread("tae300.png");
-
-
-
 //Mat img;
 //VideoCapture cap(FILE_NAME);
 //int fps = (int)cap.get(CAP_PROP_FPS); 
@@ -149,18 +142,18 @@ enum Colors
 class Shape
 {
 private:
-	int alpha;
+	double AbsoluteVAL;
 	
 
 public:
-
+	int alpha;
 	int color;
 	int alpha_max;
 	Scalar rgb;
 
 	void SetColor(int color_c, Scalar* color);
-	void Appear() { alpha += alpha_max / time_ani; }
-	void Disppear() { alpha -= alpha_max / time_ani; }
+	void Appear(int t) { alpha += alpha_max / t; }
+	void Disppear(int t) { alpha -= alpha_max / t; }
 
 };
 
@@ -172,8 +165,6 @@ private:
 
 public:
 	Point Start, End;
-	//Point Start_W, End_W;
-	//int StartX, StartY, EndX, EndY;
 
 	int line_type;
 	int thick;
@@ -183,8 +174,6 @@ public:
 	
 	void Draw(Mat plane, Point e);
 	void Drawing(Point* p, int i);
-	//void CalcAngle(double* angle);
-	//Arrow();
 };
 
 class Circle :public Shape {
@@ -200,9 +189,11 @@ public:
 	Scalar rgb2;
 
 	void Draw(Mat dst);
+	
 	//vector<Point> p;
-
 };
+
+void SpinOn() { spin += 360 / time_ani; }
 
 class Triangle :public Shape {
 
@@ -236,7 +227,7 @@ class Animation {
 void showImg(string filename, Mat img, float factor);
 void onMouse(int evt, int x, int y, int flags, void* param);
 void calcHomograpy(Point point, Point* h_point);
-void calcHomograpy_T(double x, double y, double* dx, double* dy);
+void calcHomograpy_T(Point point, Point* h_point);
 void findHomo(int n);
 //void drawCircle(Mat plane, Circle c);
 //void drawLine(Mat plane, double x, double y, double dx, double dy, Arrow arr);
@@ -261,9 +252,6 @@ void findHomo(int n);
 //	Point p[3];
 //};
 
-
-//객체별로 수정 필요
-
 //Scalar red(200, 200, 20);
 //Scalar orange(alpha, 50, 20);
 //Scalar yellow(255, 0, 0);
@@ -273,9 +261,7 @@ void findHomo(int n);
 //Scalar black(100, 100, 100);
 //double scale = 1;			//roi size
 
-
 //double lineEndX, lineEndY;
-
 
 class eventclass
 {
@@ -295,11 +281,6 @@ parseJson parse;
 //int key = waitKey();
 //Coord p[10];
 //Coord p1, p2;
-
-
-
-
-
 
 void Shape::SetColor(int color_c, Scalar* color) {
 
@@ -338,6 +319,7 @@ void Shape::SetColor(int color_c, Scalar* color) {
 }
 
 
+
 // Object Make
 Arrow arr1, arr2;
 Circle cir1, cir2;
@@ -347,6 +329,12 @@ Point ani, ani2;
 
 int main(int ac, char** av)
 {
+	selTime[0] = 0;
+	selTime[1] = str.size() - 1;
+
+	int frame1 = 0;
+	int frame2 = selTime[1];
+	
 	selPoint[0] = Point(624, 812);	//cir1
 	selPoint[1] = Point(405, 613);	//cir2
 
@@ -357,9 +345,9 @@ int main(int ac, char** av)
 	selPoint[5] = Point(1137, 536);	//arr2.e
 	selPoint[6] = Point(1261, 500);
 
-	selPoint[7] = Point(622, 804);	//tri
-	selPoint[8] = Point(1278, 513);
-	selPoint[9] = Point(1261, 500);
+	selPoint[7] = Point(715, 773);	//tri
+	selPoint[8] = Point(1261, 499);
+	selPoint[9] = Point(1339, 536);
 
 
 	Mat img = imread("1/000100.jpg");
@@ -417,12 +405,11 @@ int main(int ac, char** av)
 
 
 	namedWindow(SetWindow, WINDOW_AUTOSIZE);
-	//createTrackbar("x", SetWindow, &fx, wid);
-	//createTrackbar("y", SetWindow, &fy, hei);
 	createTrackbar("radius", SetWindow, &radius, 50);
 	createTrackbar("C1 Color", SetWindow, &color_c1, 7);
 	createTrackbar("C2 Color", SetWindow, &color_c2, 7);
 	createTrackbar("Line Color", SetWindow, &color_l, 7);
+	createTrackbar("Tri Color", SetWindow, &color_t, 7);
 	createTrackbar("R", SetWindow, &r, 255);
 	createTrackbar("G", SetWindow, &g, 255);
 	createTrackbar("B", SetWindow, &b, 255);
@@ -445,7 +432,7 @@ int main(int ac, char** av)
 	
 
 	//find warp point 
-	findHomo(0);
+	findHomo(frame1);
 	for (int i = 0; i < 10; i++)
 		calcHomograpy(selPoint[i], &wPoint[i]);
 
@@ -467,18 +454,14 @@ int main(int ac, char** av)
 	cout << "3. 2 Circle , 1 Triangle (input 5 points) " << endl;
 	int mode;
 	//cin >> mode;
-	mode = 2;
+	mode = 3;
 
 
 
 
 	while (1) {
 
-		cout << "Click two points for Circle center" << endl << endl;
-
-		showImg("Click two Points", img, scale_view);
-		setMouseCallback("Click two Points", onMouse);
-		waitKey(0);
+		
 
 	/*	calcHomograpy(fx, fy, &f1.hx, &f1.hy);
 		calcHomograpy(fx2, fy2, &f2.hx, &f2.hy);*/
@@ -504,6 +487,8 @@ int main(int ac, char** av)
 		/*	 Object Initialize	*/ 
 			
 		/*	Circle1	*/
+		int rad_start_percent = 60;
+		int rad_start = rad_start_percent / 100.0;
 		cir1.circle_type = circle_type;
 		cir1.color = color_c1;
 		cir1.color2 = 6;
@@ -530,11 +515,12 @@ int main(int ac, char** av)
 
 		/*	Triangle	*/
 		//p1 = Point(622, 804), p2 = Point(1278, 513), p3 = Point(1261, 500);
-		tri.alpha_max = 70 * (255.0 / 100.0);
-		tri.color = color_l;
+		tri.alpha_max = 40 * (255.0 / 100.0);
+		tri.color = color_t;
 		tri.fill = 1;
-		tri.thick = 5;
-		tri.wp = { wPoint[7],wPoint[8],wPoint[9] };
+		tri.thick = 3;
+		//tri.wp = { wPoint[7],wPoint[8],wPoint[9] };
+		tri.wp = { Point(240,413),Point(362,708),Point(425,709) };		// 포인트 구하는 계산. 수정필요
 
 		/*	Arrow1	*/
 		arr1.color = color_l;
@@ -559,7 +545,8 @@ int main(int ac, char** av)
 		//////////////////////////////////////////////////////////
 
 		//Animation Settings
-		frame_start = imread(str[0]);
+		
+		frame_start = imread(str[frame1]);
 		spin = 0;
 		int draw_start = 50;
 
@@ -574,7 +561,33 @@ int main(int ac, char** av)
 		calcHomograpy(trip1x, trip1y, &t2.hx, &t2.hy);
 		calcHomograpy(trip2x, trip2y, &t3.hx, &t3.hy);
 */
+		
+		Mat img_selet = imread(str[str.size()-1]);
+		//p_img = imread(str[cnt]);
+		cout << "Click two points for Circle center" << endl << endl;
+		showImg("Click two Points", img_selet, scale_view);
+		setMouseCallback("Click two Points", onMouse);
+		findHomo(str.size() - 1);
+		Point test;
+		calcHomograpy(click1, &test);
+		cout << "test " << test << endl;
 
+		//Preview
+	/*	draw = Mat::zeros(img.size(), img.type());
+		rad = radius;
+		cir1.alpha = cir1.alpha_max;
+		arr1.alpha = 90;
+		cir1.Draw(draw);
+		cir2.Draw(draw);
+		arr1.Draw(draw,arr1.End);
+		warpPerspective(draw, warp, h_T[frame1], img.size());
+		subtract(img, warp, img);
+		waitKey(0);*/
+
+
+
+		cir1.alpha = 0;
+		arr1.alpha = 0;
 		/////////////////////////////////////////////
 		/*		test		*/
 		switch (mode) {
@@ -584,13 +597,13 @@ int main(int ac, char** av)
 			
 			for (int i = 0; i < time_ani; i++)
 			{
-				cir1.Appear();
-				cir2.Appear();
-				arr1.Appear();
+				cir1.Appear(time_ani);
+				cir2.Appear(time_ani);
+				arr1.Appear(time_ani);
 
 				spin += 360 / time_ani;
 				
-				rad = (((1.0 - 0.5) / time_ani) * i + 0.5) * radius;
+				rad = (((1.0 - rad_start) / time_ani) * i + rad_start) * radius;
 				//auto_r = ((-192.0 * rad) / (245 * pow((fps / 2), 2))) * pow(i - (7 / 8) * (fps / 2), 2) + (11 / 10) * rad;
 				//setMouseCallback("Result", onMouse);
 
@@ -604,7 +617,7 @@ int main(int ac, char** av)
 
 				moveWindow("draw", 2200, 10);
 				showImg("draw", draw, scale_view);
-				warpPerspective(draw, warp, h_T[0], img.size());
+				warpPerspective(draw, warp, h_T[frame1], img.size());
 
 
 				subtract(frame_start, warp, result);
@@ -643,7 +656,7 @@ int main(int ac, char** av)
 				blur(draw, draw, Size(2, 2));
 
 				showImg("draw", draw, scale_view);
-				warpPerspective(draw, warp, h_T[0], img.size());
+				warpPerspective(draw, warp, h_T[frame1], img.size());
 
 
 				subtract(frame_start, warp, result);
@@ -660,7 +673,7 @@ int main(int ac, char** av)
 
 			spin = 0;
 			// 3. frame swipe
-			for (int cnt = 0; cnt < str.size() - 2; cnt++) {
+			for (int cnt = 0; cnt < frame2-1; cnt++) {
 
 				p_img = imread(str[cnt]);
 				findHomo(cnt);
@@ -692,14 +705,14 @@ int main(int ac, char** av)
 			}
 
 			//4. Drawing Disappear
-			frame_end = imread(str[str.size() - 1]);
+			frame_end = imread(str[frame2]);
 
 			findHomo(str.size() - 1);
 			for (int i = 0; i < time_ani; i++)
 			{
-				cir1.Disppear();
-				cir2.Disppear();
-				arr1.Disppear();
+				cir1.Disppear(time_ani);
+				cir2.Disppear(time_ani);
+				arr1.Disppear(time_ani);
 
 
 				setMouseCallback("Result", onMouse);
@@ -714,7 +727,7 @@ int main(int ac, char** av)
 
 				blur(draw, draw, Size(2, 2));
 
-				warpPerspective(draw, warp, h_T[str.size() - 1], img.size());
+				warpPerspective(draw, warp, h_T[frame2], img.size());
 
 
 				subtract(frame_end, warp, result);
@@ -732,14 +745,14 @@ int main(int ac, char** av)
 			double dx, dy;
 			for (int i = 0; i < time_ani; i++)
 			{
-				rad = (((1.0 - 0.5) / time_ani) * i + 0.5) * radius;
-				cir1.Appear();
-				cir2.Appear();
-				arr1.Appear();
+				rad = (((1.0 - rad_start) / time_ani) * i + rad_start) * radius;
+				cir1.Appear(time_ani);
+				cir2.Appear(time_ani);
+				arr1.Appear(time_ani);
 				spin += 360 / time_ani;
 
 
-				arr1.Drawing(&ani, i);
+				//arr1.Drawing(&ani, i);
 				//auto_r = ((-192.0 * rad) / (245 * pow((fps / 2), 2))) * pow(i - (7 / 8) * (fps / 2), 2) + (11 / 10) * rad;
 				//setMouseCallback("Result", onMouse);
 
@@ -748,7 +761,7 @@ int main(int ac, char** av)
 
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-				arr1.Draw(draw, ani);
+				//arr1.Draw(draw, ani);
 				blur(draw, draw, Size(2, 2));
 
 				moveWindow("draw", 2200, 10);
@@ -775,7 +788,7 @@ int main(int ac, char** av)
 
 				p_img = imread(str[cnt]);
 				findHomo(cnt);
-
+				spin += 360 / time_ani;
 				//spin += 5;
 				//spin += 360 / fps * 2;
 				// setMouseCallback("Result", onMouse);
@@ -783,9 +796,11 @@ int main(int ac, char** av)
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
 
+				arr1.Drawing(&ani, cnt);
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-				arr1.Draw(draw, arr1.End);
+				arr1.Draw(draw, ani);
+				//arr1.Draw(draw, arr1.End);
 		
 				blur(draw, draw, Size(2, 2));
 
@@ -795,7 +810,7 @@ int main(int ac, char** av)
 				subtract(p_img, warp, result);
 				setMouseCallback(SetWindow, onMouse);
 
-				imwrite("result/result3_" + to_string(cnt) + "_swipe.jpg", result);
+				imwrite("result/result2_" + to_string(cnt) + "_swipe.jpg", result);
 				showImg("Result", result, scale_view);
 
 				waitKey(1);
@@ -813,7 +828,7 @@ int main(int ac, char** av)
 			//calcHomograpy(selPoint[5], &wPoint[6]);
 			for (int i = 0; i < time_ani; i++)
 			{
-				arr2.Appear();
+				arr2.Appear(time_ani);
 				
 				spin += 360 / time_ani;
 				setMouseCallback("Result", onMouse);
@@ -841,7 +856,7 @@ int main(int ac, char** av)
 
 				setMouseCallback(SetWindow, onMouse);
 
-				imwrite("result/result2_" + to_string(i) + "_arrow.jpg", result);
+				imwrite("result/result3_" + to_string(i) + "_arrow.jpg", result);
 				showImg("Result", result, scale_view);
 				waitKey(1);
 
@@ -856,10 +871,10 @@ int main(int ac, char** av)
 			for (int i = 0; i < time_ani; i++)
 			{
 				
-				cir1.Disppear();
-				cir2.Disppear();
-				arr1.Disppear();
-				arr2.Disppear();
+				cir1.Disppear(time_ani);
+				cir2.Disppear(time_ani);
+				arr1.Disppear(time_ani);
+				arr2.Disppear(time_ani);
 		
 
 				setMouseCallback("Result", onMouse);
@@ -895,11 +910,12 @@ int main(int ac, char** av)
 				//1. Drawing Appear
 			for (int i = 0; i < time_ani; i++)
 			{
-				rad = (((1.0 - 0.5) / time_ani) * i + 0.5) * radius;
-				cir1.Appear();
-				cir2.Appear();
+				rad = (((1.0 - rad_start) / time_ani) * i + rad_start) * radius;
+				cir1.Appear(time_ani);
+				cir2.Appear(time_ani);
 				
-				spin += 360 / time_ani;
+				SpinOn();
+				//spin += 360 / time_ani;
 				//auto_r = ((-192.0 * rad) / (245 * pow((fps / 2), 2))) * pow(i - (7 / 8) * (fps / 2), 2) + (11 / 10) * rad;
 				//setMouseCallback("Result", onMouse);
 
@@ -931,8 +947,9 @@ int main(int ac, char** av)
 			for (int i = 0; i < time_ani; i++)
 			{
 
-				tri.Appear();
-				spin += 360 / time_ani;
+				tri.Appear(time_ani);
+				SpinOn();
+				//spin += 360 / time_ani;
 				setMouseCallback("Result", onMouse);
 
 				draw = Mat::zeros(img.size(), img.type());
@@ -960,12 +977,13 @@ int main(int ac, char** av)
 			// 3. frame swipe
 			for (int cnt = 0; cnt < str.size() - 2; cnt++) {
 
+				//SpinOn();
+			
+				spin += 360 / str.size() - 2;
 				p_img = imread(str[cnt]);
 				findHomo(cnt);
 
 				//warpPerspective(img, drawimg, h[cnt], drawimg.size());	
-				//spin += 5;
-				//spin += 360 / fps * 2;
 				// setMouseCallback("Result", onMouse);
 
 				draw = Mat::zeros(img.size(), img.type());
@@ -992,9 +1010,10 @@ int main(int ac, char** av)
 			findHomo(str.size() - 1);
 			for (int i = 0; i < time_ani; i++)
 			{
-				tri.Disppear();
-				cir1.Disppear();
-				cir2.Disppear();
+				SpinOn();
+				tri.Disppear(time_ani);
+				cir1.Disppear(time_ani);
+				cir2.Disppear(time_ani);
 
 				setMouseCallback("Result", onMouse);
 
@@ -1098,13 +1117,16 @@ void calcHomograpy(Point point, Point* h_point)
 {
 	double dx = (h11 * point.x + h12 * point.y + h13) / (h31 * point.x + h32 * point.y + 1);
 	double dy = (h21 * point.x + h22 * point.y + h23) / (h31 * point.x + h32 * point.y + 1);
+
 	*h_point = Point(dx, dy);
 }
 
-void calcHomograpy_T(double x, double y, double* dx, double* dy)
+void calcHomograpy_T(Point point, Point* h_point)
 {
-	*dx = (th11 * x + th12 * y + th13) / (th31 * x + th32 * y + 1);
-	*dy = (th21 * x + th22 * y + th23) / (th31 * x + th32 * y + 1);
+	double dx = (th11 * point.x + th12 * point.y + th13) / (th31 * point.x + th32 * point.y + 1);
+	double dy = (th21 * point.x + th22 * point.y + th23) / (th31 * point.x + th32 * point.y + 1);
+
+	*h_point = Point(dx, dy);
 }
 
 
@@ -1127,18 +1149,21 @@ void Circle::Draw(Mat plane)
 	SetColor(color, &rgb);
 	SetColor(color2, &rgb2);
 
+	thick = 4;
+	double hole = rad * (10 - 4) / 10.0;
+
 	switch (circle_type)
 	{
 	case 0:
 		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, 16);
 		ellipse(plane, Point(center), Size(rad + 2, rad + 2), spin - 30, 0, 60, Scalar(0, 0, 0), -1, 16);
 		ellipse(plane, Point(center), Size(rad, rad), spin - 30, 0, 60, rgb2, -1, 16);
-		ellipse(plane, Point(center), Size(rad * 0.6, rad * 0.6), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
+		ellipse(plane, Point(center), Size(hole, hole), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
 		break;
 
 	case 1:
 		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, 16);
-		ellipse(plane, Point(center), Size(rad - thick, rad - thick), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
+		ellipse(plane, Point(center), Size(hole, hole), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
 		break;
 
 	case 2:
@@ -1150,7 +1175,7 @@ void Circle::Draw(Mat plane)
 				ellipse(plane, Point(center), Size(rad + 2, rad + 2), spin + beta * i, 0, beta * 0.6, Scalar(0, 0, 0), -1, 16);
 			}
 		}
-		ellipse(plane, Point(center), Size(rad - thick * 0.5, rad - thick * 0.5), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
+		ellipse(plane, Point(center), Size(rad*0.7,rad*0.7), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
 		break;
 
 	case 3:

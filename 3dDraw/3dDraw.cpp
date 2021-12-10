@@ -39,7 +39,7 @@ double pY[19][4] = { {},{},{},{} };
 double h11, h12, h13, h21, h22, h23, h31, h32;		//homogeneous matrix의 요소를 담는 변수
 double th11, th12, th13, th21, th22, th23, th31, th32;
 
-							
+
 
 // Image MAT
 Mat frame;
@@ -51,46 +51,34 @@ vector<int> selTime(10);
 // POINT
 vector<Point> selPoint(10);
 vector<Point> wPoint(10);
-//vector<Point> pts[10];
-//vector<Point2d> ptsList(10);
-//vector<Coord> pts[2];
-
-
-
-// etc.
 int fx, fy;				//첫번째 원의 point 
 int fx2, fy2;			//두번째 원의 point
 
-int radius;		//input radius
-int radius1, radius2;
-int rad;
+
+
+
+
 //color
-int r = 123, g = 220, b = 220;
-int color_c1 = 0;
-int color_c2 = 0;
-int color_t = 3;
-int color_l = 5;
+class TestProgram {
+public:
+
+	int color_c1 = 2;
+	int color_c2 = 3;
+	int color_t = 0;
+	int color_l = 0;
+
+	int line_type = 1;			// 1.solid	2.dotted(1)	3.dotted(2)
+	int circle_type = 0;		// 1.spin	2.ring	3.dotted	4.solid(fill)
+	int thick = 2;
+};
 
 //parameter
-int line_type = 1;			// 1.solid	2.dotted(1)	3.dotted(2)
-int circle_type = 0;		// 1.spin	2.ring	3.dotted	4.solid(fill)
-int thick = 2;
-int spin = 0;		//spin circle parameter
 
-
-int cnt = 1;
-
-int fps = 30;
 
 float scale_view = 1;		//image scale
-int time_ani = 15;
-String SetWindow = "Settings";
-//int alpha = 0;
 
-//int num = 19;
-//string dsc[19] = {};
-//Mat flag = imread("korea.png");
-//Mat inner = imread("tae300.png");
+String SetWindow = "Settings";
+
 //Mat img;
 //VideoCapture cap(FILE_NAME);
 //int fps = (int)cap.get(CAP_PROP_FPS); 
@@ -116,7 +104,7 @@ void Coord::SetPoint(int a, int b)
 
 
 
-enum Colors
+enum eColors
 {
 	Custom,
 	Red,
@@ -128,7 +116,7 @@ enum Colors
 	Black
 };
 
-//enum Shapes
+//enum eShapes
 //{
 //	Circle,
 //	Arrow,
@@ -142,67 +130,134 @@ enum Colors
 class Shape
 {
 private:
-	double AbsoluteVAL;
-	
+
 
 public:
-	int alpha;
-	int color;
-	int alpha_max;
 	Scalar rgb;
+	int mAlpha_;
+	int mAlpha_max_;
+	int mAbs_val_();
+	int mColor_;
+	int r, g, b;
+	//double mAbsolute_val_;
+
+
+	int mTime_ani_ = 15;
 
 	void SetColor(int color_c, Scalar* color);
-	void Appear(int t) { alpha += alpha_max / t; }
-	void Disppear(int t) { alpha -= alpha_max / t; }
+	void Appear(int t) { mAlpha_ += mAlpha_max_ / t; }
+	void Disppear(int t) { mAlpha_ -= mAlpha_max_ / t; }
+
 
 };
+
+//int radius;		//input radius
+
+
+void calcAutoRadius(double* value)
+{
+	parseJson parse;
+	parse.parsing_json();
+
+	for (int i = 0; i < 4; i++) {
+		wX[i] = parse.wpointX[i];
+		wY[i] = parse.wpointY[i];
+	}
+	double widPixel = (abs(wX[1] - wX[0]) + abs(wX[2] - wX[3])) * 0.5;
+	double heiPixel = (abs(wY[2] - wY[1]) + abs(wY[3] - wY[0])) * 0.5;
+
+	const int widReal = 13500;	//	(millimeter)
+	const int heiReal = 3300;
+	const int radiusReal = 500;
+
+	int radius1, radius2;
+	radius1 = (radiusReal * widPixel) / widReal;
+	radius2 = (radiusReal * heiPixel) / heiReal;
+	*value = radius1 + radius2;
+	cout << radius1 << " " << radius2 << endl;
+
+}
+
+int Shape::mAbs_val_()
+{
+	parseJson parse;
+	parse.parsing_json();
+
+	for (int i = 0; i < 4; i++) {
+		wX[i] = parse.wpointX[i];
+		wY[i] = parse.wpointY[i];
+	}
+	double widPixel = (abs(wX[1] - wX[0]) + abs(wX[2] - wX[3])) * 0.5;
+	double heiPixel = (abs(wY[2] - wY[1]) + abs(wY[3] - wY[0])) * 0.5;
+
+	const int widReal = 13500;	//	(millimeter)
+	const int heiReal = 3300;
+	const int radiusReal = 500;
+
+	int radius1, radius2;
+	radius1 = (radiusReal * widPixel) / widReal;
+	radius2 = (radiusReal * heiPixel) / heiReal;
+
+	return  radius1 + radius2;
+
+}
+
+
+
+
 
 class Arrow :public Shape
 {
 
 private:
 	double angle;
-
-public:
-	Point Start, End;
-
-	int line_type;
-	int thick;
 	double triEx, triEy;					//삼각형 끝 포인트
 	double trip1x, trip1y, trip2x, trip2y;	//삼각형 나머지 두 포인트
+
+public:
+	Point mStart_, mEnd_;
+
+	int mLine_type_;
+	int mThick_;
 	vector<string> type{ "solid","dotted" };
-	
+
 	void Draw(Mat plane, Point e);
 	void Drawing(Point* p, int i);
 };
 
 class Circle :public Shape {
 
-public:
-	Point center;
 
-	int circle_type;
-	int thick;
-	double r;
-	int fill;
-	int color2;
-	Scalar rgb2;
+	Scalar spin_rgb;
+public:
+	Point mCenter_;
+
+	int mSpin_;
+	int mRadius_;
+	int mRadius_start;
+	int mCircle_type_;
+	int mColor_spin;
+	int mThickness_;
+
+	//int mFill;
+	//double r;
 
 	void Draw(Mat dst);
-	
+	void SpinOn() { mSpin_ += 360 / mTime_ani_; }
+	void expandRad(int t) { mRadius_ = ((1.0 - mRadius_start) * t / mTime_ani_ + mRadius_start) * 30; }
+
 	//vector<Point> p;
 };
 
-void SpinOn() { spin += 360 / time_ani; }
 
 class Triangle :public Shape {
 
 public:
 
-	int fill;
-	int thick;
-	vector<Point> p;
-	vector<Point> wp;
+	//int fill;
+	int mThick_;
+	vector<Point> mPoint_;
+	vector<Point> mWarpPoint_;
 
 	void Draw(Mat plane);
 
@@ -229,28 +284,7 @@ void onMouse(int evt, int x, int y, int flags, void* param);
 void calcHomograpy(Point point, Point* h_point);
 void calcHomograpy_T(Point point, Point* h_point);
 void findHomo(int n);
-//void drawCircle(Mat plane, Circle c);
-//void drawLine(Mat plane, double x, double y, double dx, double dy, Arrow arr);
-//void drawPlane(Mat dst, Triangle t);
-//void calcHomograpy(double x, double y, double* dx, double* dy);
 
-//double arrStartX, arrStartY, arrEndX, arrEndY;
-//double rx, ry;			//circle 센터로부터 arr start,end point 계산할때 사용되는 변수
-
-//struct transP {			//homogeneous matrix를 적용하여 계산한 포인트가 담기는 변수(warp point)
-//	double hx;
-//	double hy;
-//};
-//
-//struct warpPoint
-//{
-//	double x, y;
-//	vector<Point2d> p;
-//};
-//
-//struct planePoint {
-//	Point p[3];
-//};
 
 //Scalar red(200, 200, 20);
 //Scalar orange(alpha, 50, 20);
@@ -259,32 +293,22 @@ void findHomo(int n);
 //Scalar blue(30, 90, alpha);
 //Scalar white(30, 30, 30);
 //Scalar black(100, 100, 100);
-//double scale = 1;			//roi size
 
-//double lineEndX, lineEndY;
-
-class eventclass
+class Eventclass
 {
 public:
 	void HandleEvent(int evt, int x, int y, int flags);
 };
 
-//struct transP f1, f2;		//circle point calc h_matrix
-//struct transP t1, t2, t3;	//
-////struct transP as, ae;		//arrow start,end trans point
-////struct transP has, hae;		//arrow homo, start end warp point
-////struct warpPoint warp1, warp2, warp3;	// triangle point
-
-parseJson parse;
 
 
-//int key = waitKey();
-//Coord p[10];
-//Coord p1, p2;
 
 void Shape::SetColor(int color_c, Scalar* color) {
 
-	Scalar rgb;
+	rgb;
+	int alpha = mAlpha_;
+	int alpha_max = mAlpha_max_;
+	r = 123, g = 220, b = 220;
 	//int r = 123, g = 220, b = 220;
 
 	switch (color_c)
@@ -323,32 +347,59 @@ void Shape::SetColor(int color_c, Scalar* color) {
 // Object Make
 Arrow arr1, arr2;
 Circle cir1, cir2;
+
 Triangle tri;
 Point ani, ani2;
+Shape sh;
+TestProgram test;
+
+struct CirclePARAM :Circle {
+
+
+};
+
+struct CirclePARAM getParameter()
+{
+
+	struct CirclePARAM circle;
+
+	vector<Circle> cir;
+
+	//cir[0].mAlpha_max_ = 50;
+	//cir[0].mColor_ = test.color_c1;
+	//cir[0].mColor_spin = 3;
+	//cir[0].mCenter_ = wPoint[0];
+	//cir[0].mRadius_ = sh.mAbs_val_();
+	//cir[0].mRadius_start = 50;
+	//cir[0].mThickness_ = cir.mRadius_ / 2.0;
+	//cir[0].mCircle_type_ = test.circle_type;
+
+	return circle;
+}
+
+
+//초기화 하는 구조체
+
+//초기화 하는 함수?
+
+void initialize()
+{
+	//생성됐을때 들어가야 하는 값
+
+
+}
+
+//
+
+
 
 
 int main(int ac, char** av)
 {
-	selTime[0] = 0;
-	selTime[1] = str.size() - 1;
+	glob(path, str, false);
 
-	int frame1 = 0;
-	int frame2 = selTime[1];
-	
-	selPoint[0] = Point(624, 812);	//cir1
-	selPoint[1] = Point(405, 613);	//cir2
-
-	selPoint[2] = Point(720, 782);	//arr1.s 
-	selPoint[3] = Point(520, 596);	//arr1.e
-
-	selPoint[4] = Point(519, 593);	//arr2.s
-	selPoint[5] = Point(1137, 536);	//arr2.e
-	selPoint[6] = Point(1261, 500);
-
-	selPoint[7] = Point(715, 773);	//tri
-	selPoint[8] = Point(1261, 499);
-	selPoint[9] = Point(1339, 536);
-
+	if (str.size() == 0)
+		cout << "image non exist. \n" << endl;
 
 	Mat img = imread("1/000100.jpg");
 	//Mat img = imread("1/000136.jpg");
@@ -362,17 +413,40 @@ int main(int ac, char** av)
 	warp = Mat::zeros(img.size(), img.type());
 	Mat result = Mat::zeros(img.size(), img.type());
 	Mat roi, img_warp, frame_end, frame_start;
-	//Mat plane(hei * 2, wid * 2, img.type(), Scalar(50, 130, 55));	//ROI
-	//Mat flag_mini, flag_warp;
-	//Mat inner_mini, inner_warp; 
 
-	//int t = 1; //time second 
+	struct CirclePARAM c1;
+	//c1 = getParameter();
 
 
-	glob(path, str, false);
+	selTime[0] = 0; // 첫 프레임
+	selTime[1] = str.size() - 1;	// 마지막 프레임
 
-	if (str.size() == 0)
-		cout << "image non exist. \n" << endl;
+	int frame1 = 0;
+	int frame2 = selTime[1];
+
+
+	//frame for draw
+	frame_start = imread(str[frame1]);
+	frame_end = imread(str[frame2]);
+	//frame_end = imread(str[frame2]);
+	//frame_end = imread(str[str.size() - 2]);
+
+	selPoint[0] = Point(624, 812);	//cir1
+	selPoint[1] = Point(405, 613);	//cir2
+
+	selPoint[2] = Point(720, 782);	//arr1.s 
+	selPoint[3] = Point(520, 596);	//arr1.e
+
+	selPoint[4] = Point(519, 593);	//arr2.s
+	selPoint[5] = Point(1137, 536);	//arr2.e
+	selPoint[6] = Point(1261, 500);
+
+	selPoint[7] = Point(715, 773);	//tri
+	selPoint[8] = Point(1261, 499);	//goal area 1
+	selPoint[9] = Point(1339, 536);	//goal area 2
+
+
+
 
 	//parsing_json();
 	/*if (!cap.isOpened())
@@ -382,39 +456,19 @@ int main(int ac, char** av)
 	}*/
 	//cap >> img;
 
-	//wid, hei, rad 계산
-	parse.parsing_json();
-
-	for (int i = 0; i < 4; i++) {
-		wX[i] = parse.wpointX[i];
-		wY[i] = parse.wpointY[i];
-	}
-	double Wid_Pixel = (abs(wX[1] - wX[0]) + abs(wX[2] - wX[3])) * 0.5;
-	double Hei_Pixel = (abs(wY[2] - wY[1]) + abs(wY[3] - wY[0])) * 0.5;
-
-	/*double wid = (abs(wpointX[1] - wpointX[0]) + abs(wpointX[2] - wpointX[3])) * 0.5;
-	double hei = (abs(wpointY[2] - wpointY[1]) + abs(wpointY[3] - wpointY[0])) * 0.5;*/
-	//radius 계산		 rad_pixel : 1m = length_pixel : length_real
-
-	int Wid_Real = 13500;	//	(millimeter)
-	int Hei_Real = 3300; 
-	int radius_Real = 500;
-	radius1 = (radius_Real * Wid_Pixel) / Wid_Real;
-	radius2 = (radius_Real * Hei_Pixel) / Hei_Real;
-	radius = radius1 + radius2;
 
 
 	namedWindow(SetWindow, WINDOW_AUTOSIZE);
-	createTrackbar("radius", SetWindow, &radius, 50);
-	createTrackbar("C1 Color", SetWindow, &color_c1, 7);
-	createTrackbar("C2 Color", SetWindow, &color_c2, 7);
-	createTrackbar("Line Color", SetWindow, &color_l, 7);
-	createTrackbar("Tri Color", SetWindow, &color_t, 7);
-	createTrackbar("R", SetWindow, &r, 255);
-	createTrackbar("G", SetWindow, &g, 255);
-	createTrackbar("B", SetWindow, &b, 255);
-	createTrackbar("Circle/two color/Fill/null", SetWindow, &circle_type, 4);
-	createTrackbar("Line/Arrow/null", SetWindow, &line_type, 2);
+	//createTrackbar("radius", SetWindow, &radius, 50);
+	createTrackbar("C1 Color", SetWindow, &test.color_c1, 7);
+	createTrackbar("C2 Color", SetWindow, &test.color_c2, 7);
+	createTrackbar("Line Color", SetWindow, &test.color_l, 7);
+	createTrackbar("Tri Color", SetWindow, &test.color_t, 7);
+	createTrackbar("R", SetWindow, &sh.r, 255);
+	createTrackbar("G", SetWindow, &sh.g, 255);
+	createTrackbar("B", SetWindow, &sh.b, 255);
+	createTrackbar("Circle/two color/Fill/null", SetWindow, &test.circle_type, 4);
+	createTrackbar("Line/Arrow/null", SetWindow, &test.line_type, 2);
 	//createTrackbar("Transparency", SetWindow, &alpha, 255);
 	//createTrackbar("Thickness", SetWindow, &thick, 20);
 	//setTrackbarMin("Thickness", SetWindow, 1);
@@ -429,7 +483,7 @@ int main(int ac, char** av)
 
 
 	cout << "str " << str.size() << endl;
-	
+
 
 	//find warp point 
 	findHomo(frame1);
@@ -438,15 +492,6 @@ int main(int ac, char** av)
 
 	//findHomo(str.size()-1);
 
-	//wp1.x = warp1.x;
-	//wp1.y = warp1.y;
-	//wp2.x = warp2.x;
-	//wp2.y = warp2.y;
-	//wp3.x = warp3.x;
-	//wp3.y = warp3.y;
-
-
-
 
 	cout << "===============Select Mode==============" << endl << endl;
 	cout << "1. Circle and Arrow (input 2 points) " << endl;
@@ -454,7 +499,7 @@ int main(int ac, char** av)
 	cout << "3. 2 Circle , 1 Triangle (input 5 points) " << endl;
 	int mode;
 	//cin >> mode;
-	mode = 3;
+	mode = 1;
 
 
 
@@ -463,92 +508,73 @@ int main(int ac, char** av)
 
 		
 
-	/*	calcHomograpy(fx, fy, &f1.hx, &f1.hy);
-		calcHomograpy(fx2, fy2, &f2.hx, &f2.hy);*/
-		/*calcHomograpy(trip1x, trip1y, &t1.hx, &t1.hy);
-		calcHomograpy(trip2x, trip2y, &t2.hx, &t2.hy);
-		wt1.x = t1.hx;
-		wt1.y = t1.hy;
-		wt2.x = t2.hx;
-		wt2.y = t2.hy;*/
-	/*	while (p[0].x != fx)
-			p[0].SetPoint(fx, fy);
-
-		while (p[1].x != fx2)
-		
-			p[1].SetPoint(fx2, fy2);*/
-		/*calcHomograpy(p[0].x, p[0].y, &arr1_s.hx, &arr1_s.hy);
-		calcHomograpy(p[1].x, p[1].y, &arr1_e.hx, &arr1_e.hy);
-	*/
-
 		findHomo(0);
 
 		////////////////////////////////////////
-		/*	 Object Initialize	*/ 
-			
+		/*	 Object Initialize	*/
+
 		/*	Circle1	*/
-		int rad_start_percent = 60;
-		int rad_start = rad_start_percent / 100.0;
-		cir1.circle_type = circle_type;
-		cir1.color = color_c1;
-		cir1.color2 = 6;
-		cir1.fill = 1;
-	//	cir1.r = rad;
-		cir1.r = 30;
-		cir1.thick = radius / 2;
-		cout << "thick " << cir1.thick << endl;
-		cir1.center = wPoint[0];
-		cir1.alpha_max = 30 * (255 / 100);
+		cir1.mCenter_ = wPoint[0];
+		cir1.mColor_ = test.color_c1;
+		cir1.mColor_spin = test.color_t;
+		cir1.mCircle_type_ = test.circle_type;
+		cir1.mRadius_ = 30;
+		cir1.mRadius_start = 0.5;
+		cir1.mThickness_ = cir1.mRadius_ * 0.5;
+		cir1.mAlpha_max_ = 30;
 
 
 		/*	Circle2	*/
-		cir2.circle_type = circle_type;
-		cir2.color = color_c2;
-		cir2.color2 = 6;
-		cir2.fill = 1;
-		//cir2.r = rad;
-		cir2.r = 20;
-		cir2.thick = radius / 2;
-		cir2.center = wPoint[1];
-		cir2.alpha_max = 50 * (255.0 / 100.0);
+		cir2.mCenter_ = wPoint[1];
+		cir2.mColor_ = test.color_c2;
+		cir2.mColor_spin = test.color_t;
+		cir2.mCircle_type_ = test.circle_type;
+		cir2.mRadius_ = 25;
+		cir2.mRadius_start = 0.7;
+		cir2.mThickness_ = cir2.mRadius_ * 0.5;
+		cir2.mAlpha_max_ = 30;
 
 
 		/*	Triangle	*/
-		//p1 = Point(622, 804), p2 = Point(1278, 513), p3 = Point(1261, 500);
-		tri.alpha_max = 40 * (255.0 / 100.0);
-		tri.color = color_t;
-		tri.fill = 1;
-		tri.thick = 3;
-		//tri.wp = { wPoint[7],wPoint[8],wPoint[9] };
-		tri.wp = { Point(240,413),Point(362,708),Point(425,709) };		// 포인트 구하는 계산. 수정필요
+		tri.mWarpPoint_ = { Point(240, 413), Point(362, 708), Point(425, 709) };
+		tri.mAlpha_max_ = 60;
+		tri.mColor_ = test.color_t;
+		tri.mThick_ = 3;
+
 
 		/*	Arrow1	*/
-		arr1.color = color_l;
-		arr1.thick = radius / 3.0;
-		Point click1 = Point(fx, fy);
+
+	/*	Point click1 = Point(fx, fy);
 		Point click2 = Point(fx2, fy2);
-		calcHomograpy(click1, &arr1.Start);
-		calcHomograpy(click2, &arr1.End);
-	/*	arr1.Start = Point(arr1_s.hx, arr1_s.hy);
-		arr1.End = Point(arr1_e.hx, arr1_e.hy);*/
-		arr1.line_type = 0;
-		arr1.alpha_max = 40 * (255.0 / 100.0);
+		calcHomograpy(click1, &arr1.mStart_);
+		calcHomograpy(click2, &arr1.mEnd_);*/
+		arr1.mStart_ = wPoint[2];
+		arr1.mEnd_ = wPoint[3];
+		arr1.mLine_type_ = test.line_type;
+		arr1.mThick_ = cir1.mRadius_ * 0.4;
+		arr1.mColor_ = test.color_l;
+		arr1.mAlpha_max_ = 60;
+		cout << "start " << arr1.mStart_ << endl;
 
 
 		/*	Arrow2	*/
-		arr2.color = color_l;
-		arr2.thick = radius / 3.0;
-		arr2.Start = wPoint[4];
-		arr2.End = wPoint[5];
-		arr2.line_type = line_type;
-		arr2.alpha_max = 30 * (255.0 / 100.0);
+		arr2.mLine_type_ = test.line_type;
+		arr2.mThick_ = cir1.mRadius_ * 0.5;
+		arr2.mColor_ = test.color_l;
+		arr2.mAlpha_max_ = 40;
+		arr2.mStart_ = wPoint[4];
+		arr2.mEnd_ = wPoint[5];
+
 		//////////////////////////////////////////////////////////
 
+
+
+
 		//Animation Settings
-		
-		frame_start = imread(str[frame1]);
-		spin = 0;
-		int draw_start = 50;
+
+
+
+		//int draw_start = 50;
 
 		/*if (img.empty())
 		{
@@ -561,51 +587,66 @@ int main(int ac, char** av)
 		calcHomograpy(trip1x, trip1y, &t2.hx, &t2.hy);
 		calcHomograpy(trip2x, trip2y, &t3.hx, &t3.hy);
 */
-		
-		Mat img_selet = imread(str[str.size()-1]);
+
+		Mat img_selet = imread(str[str.size() - 1]);
 		//p_img = imread(str[cnt]);
 		cout << "Click two points for Circle center" << endl << endl;
-		showImg("Click two Points", img_selet, scale_view);
+		showImg("Click two Points", frame_start, scale_view);
 		setMouseCallback("Click two Points", onMouse);
-		findHomo(str.size() - 1);
-		Point test;
-		calcHomograpy(click1, &test);
-		cout << "test " << test << endl;
 
 		//Preview
-	/*	draw = Mat::zeros(img.size(), img.type());
-		rad = radius;
-		cir1.alpha = cir1.alpha_max;
-		arr1.alpha = 90;
-		cir1.Draw(draw);
-		cir2.Draw(draw);
-		arr1.Draw(draw,arr1.End);
-		warpPerspective(draw, warp, h_T[frame1], img.size());
-		subtract(img, warp, img);
-		waitKey(0);*/
 
-
-
-		cir1.alpha = 0;
-		arr1.alpha = 0;
 		/////////////////////////////////////////////
 		/*		test		*/
 		switch (mode) {
 
-		case 1:	//1. Circle and Arrow 
-			//1. Drawing Appear
-			
-			for (int i = 0; i < time_ani; i++)
+		case 0:
+			for (int cnt = 0; cnt < sh.mTime_ani_; cnt++)
 			{
-				cir1.Appear(time_ani);
-				cir2.Appear(time_ani);
-				arr1.Appear(time_ani);
+				//cir[0].alpha = 40;
 
-				spin += 360 / time_ani;
-				
-				rad = (((1.0 - rad_start) / time_ani) * i + rad_start) * radius;
+
+				//rad = (((1.0 - rad_start) / sh.time_ani) * cnt + rad_start) * radius;
 				//auto_r = ((-192.0 * rad) / (245 * pow((fps / 2), 2))) * pow(i - (7 / 8) * (fps / 2), 2) + (11 / 10) * rad;
 				//setMouseCallback("Result", onMouse);
+
+				draw = Mat::zeros(img.size(), img.type());
+				warp = Mat::zeros(img.size(), img.type());
+
+
+
+				blur(draw, draw, Size(2, 2));
+
+				moveWindow("draw", 2200, 10);
+				showImg("draw", draw, scale_view);
+				warpPerspective(draw, warp, h_T[frame1], img.size());
+
+
+				subtract(frame_start, warp, result);
+				setMouseCallback(SetWindow, onMouse);
+
+				imwrite("result/result1_" + to_string(cnt) + "_appear.jpg", result);
+				showImg("Result", result, scale_view);
+
+				waitKey(1);
+			}
+			waitKey(0);
+			break;
+
+		case 1:	//1. Circle and Arrow 
+			//1. Drawing Appear
+
+			for (int i = 0; i < sh.mTime_ani_; i++)
+			{
+				cir1.Appear(sh.mTime_ani_);
+				cir2.Appear(sh.mTime_ani_);
+				arr1.Appear(sh.mTime_ani_);
+				cir1.SpinOn();
+				cir2.SpinOn();
+				cir1.expandRad(i);
+				cir2.expandRad(i);
+
+		
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
@@ -632,23 +673,21 @@ int main(int ac, char** av)
 
 			waitKey(1);
 
-			
+
 			//2. Arrow Appear
-			for (int i = 0; i < time_ani; i++)
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
 
-				spin += 360 / time_ani;
+				cir1.SpinOn();
+				cir2.SpinOn();
 				setMouseCallback("Result", onMouse);
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
 
-				//double dx, dy;
-				//double aniStartX, aniStartY, aniEndX, aniEndY;
-
-				//arr1.Drawing(&dx, &dy, i);
-				
+		
 				arr1.Drawing(&ani, i);
+
 
 				cir1.Draw(draw);
 				cir2.Draw(draw);
@@ -671,24 +710,24 @@ int main(int ac, char** av)
 
 			}
 
-			spin = 0;
+
 			// 3. frame swipe
-			for (int cnt = 0; cnt < frame2-1; cnt++) {
+			for (int cnt = 0; cnt < str.size() - 2; cnt++) {
 
 				p_img = imread(str[cnt]);
 				findHomo(cnt);
 
-				//spin += 5;
-				//spin += 360 / fps * 2;
-				// setMouseCallback("Result", onMouse);
+
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
 
+				cir1.SpinOn();
+				cir2.SpinOn();
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-				arr1.Draw(draw, arr1.End);
-				//arr1.Draw(draw, arr1.EndX, arr1.EndY);
+				arr1.Draw(draw, arr1.mEnd_);
+
 				blur(draw, draw, Size(2, 2));
 
 				warpPerspective(draw, warp, h_T[cnt], img.size());
@@ -705,14 +744,14 @@ int main(int ac, char** av)
 			}
 
 			//4. Drawing Disappear
-			frame_end = imread(str[frame2]);
+
 
 			findHomo(str.size() - 1);
-			for (int i = 0; i < time_ani; i++)
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
-				cir1.Disppear(time_ani);
-				cir2.Disppear(time_ani);
-				arr1.Disppear(time_ani);
+				cir1.Disppear(sh.mTime_ani_);
+				cir2.Disppear(sh.mTime_ani_);
+				arr1.Disppear(sh.mTime_ani_);
 
 
 				setMouseCallback("Result", onMouse);
@@ -722,7 +761,7 @@ int main(int ac, char** av)
 
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-				arr1.Draw(draw, arr1.End);
+				arr1.Draw(draw, arr1.mEnd_);
 				//arr1.Draw(draw, arr1.EndX, arr1.EndY);
 
 				blur(draw, draw, Size(2, 2));
@@ -743,18 +782,16 @@ int main(int ac, char** av)
 		case 2:	// 2. Circle , 2 Arrow (input 4 points) 
 			//1. Drawing Appear
 			double dx, dy;
-			for (int i = 0; i < time_ani; i++)
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
-				rad = (((1.0 - rad_start) / time_ani) * i + rad_start) * radius;
-				cir1.Appear(time_ani);
-				cir2.Appear(time_ani);
-				arr1.Appear(time_ani);
-				spin += 360 / time_ani;
+				cir1.expandRad(i);
+				cir2.expandRad(i);
+				cir1.Appear(sh.mTime_ani_);
+				cir2.Appear(sh.mTime_ani_);
+				arr1.Appear(sh.mTime_ani_);
+				cir1.SpinOn();
+				cir2.SpinOn();
 
-
-				//arr1.Drawing(&ani, i);
-				//auto_r = ((-192.0 * rad) / (245 * pow((fps / 2), 2))) * pow(i - (7 / 8) * (fps / 2), 2) + (11 / 10) * rad;
-				//setMouseCallback("Result", onMouse);
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
@@ -782,26 +819,25 @@ int main(int ac, char** av)
 
 
 
-			spin = 0;
+
 			// 2. frame swipe
 			for (int cnt = 0; cnt < str.size() - 2; cnt++) {
 
 				p_img = imread(str[cnt]);
 				findHomo(cnt);
-				spin += 360 / time_ani;
-				//spin += 5;
-				//spin += 360 / fps * 2;
-				// setMouseCallback("Result", onMouse);
+
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
-
+				cir1.SpinOn();
+				cir2.SpinOn();
 				arr1.Drawing(&ani, cnt);
+
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-				arr1.Draw(draw, ani);
-				//arr1.Draw(draw, arr1.End);
+				arr1.Draw(draw, arr1.mEnd_);
 		
+
 				blur(draw, draw, Size(2, 2));
 
 				warpPerspective(draw, warp, h_T[cnt], img.size());
@@ -817,20 +853,20 @@ int main(int ac, char** av)
 
 			}
 
-			frame_end = imread(str[str.size() - 1]);
 
 
 
-			
+
+
 			//3. Arrow2 Appear
 			findHomo(str.size() - 1);
-			//calcHomograpy(selPoint[5], &wPoint[5]);
-			//calcHomograpy(selPoint[5], &wPoint[6]);
-			for (int i = 0; i < time_ani; i++)
+
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
-				arr2.Appear(time_ani);
-				
-				spin += 360 / time_ani;
+				arr2.Appear(sh.mTime_ani_);
+
+				cir1.SpinOn();
+				cir2.SpinOn();
 				setMouseCallback("Result", onMouse);
 
 				draw = Mat::zeros(img.size(), img.type());
@@ -839,11 +875,11 @@ int main(int ac, char** av)
 
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-				arr1.Draw(draw, arr1.End);
+				arr1.Draw(draw, arr1.mEnd_);
 
 				arr2.Drawing(&ani2, i);
 				arr2.Draw(draw, ani2);
-			
+
 
 				blur(draw, draw, Size(2, 2));
 
@@ -865,17 +901,17 @@ int main(int ac, char** av)
 
 
 			//4. Drawing Disappear
-			frame_end = imread(str[str.size() - 1]);
+	
 
 			findHomo(str.size() - 1);
-			for (int i = 0; i < time_ani; i++)
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
-				
-				cir1.Disppear(time_ani);
-				cir2.Disppear(time_ani);
-				arr1.Disppear(time_ani);
-				arr2.Disppear(time_ani);
-		
+
+				cir1.Disppear(sh.mTime_ani_);
+				cir2.Disppear(sh.mTime_ani_);
+				arr1.Disppear(sh.mTime_ani_);
+				arr2.Disppear(sh.mTime_ani_);
+
 
 				setMouseCallback("Result", onMouse);
 
@@ -884,8 +920,8 @@ int main(int ac, char** av)
 
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-				arr1.Draw(draw, arr1.End);
-				arr2.Draw(draw, arr2.End);
+				arr1.Draw(draw, arr1.mEnd_);
+				arr2.Draw(draw, arr2.mEnd_);
 
 
 				blur(draw, draw, Size(2, 2));
@@ -908,23 +944,23 @@ int main(int ac, char** av)
 
 		case 3:	// 3. 2 Circle , 1 Triangle (input 5 points)
 				//1. Drawing Appear
-			for (int i = 0; i < time_ani; i++)
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
-				rad = (((1.0 - rad_start) / time_ani) * i + rad_start) * radius;
-				cir1.Appear(time_ani);
-				cir2.Appear(time_ani);
-				
-				SpinOn();
-				//spin += 360 / time_ani;
-				//auto_r = ((-192.0 * rad) / (245 * pow((fps / 2), 2))) * pow(i - (7 / 8) * (fps / 2), 2) + (11 / 10) * rad;
-				//setMouseCallback("Result", onMouse);
+				cir1.expandRad(i);
+				cir2.expandRad(i);
+				cir1.Appear(sh.mTime_ani_);
+				cir2.Appear(sh.mTime_ani_);
+
+				cir1.SpinOn();
+				cir2.SpinOn();
+	
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
 
 				cir1.Draw(draw);
 				cir2.Draw(draw);
-			
+
 
 				moveWindow("draw", 2200, 10);
 				showImg("draw", draw, scale_view);
@@ -944,22 +980,23 @@ int main(int ac, char** av)
 
 
 			//2. Triangle Appear
-			for (int i = 0; i < time_ani; i++)
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
 
-				tri.Appear(time_ani);
-				SpinOn();
-				//spin += 360 / time_ani;
+				tri.Appear(sh.mTime_ani_);
+				cir1.SpinOn();
+				cir2.SpinOn();
+				//spin += 360 / sh.time_ani;
 				setMouseCallback("Result", onMouse);
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
 
-				
+
 				cir1.Draw(draw);
 				cir2.Draw(draw);
 				tri.Draw(draw);
-			
+
 				showImg("draw", draw, scale_view);
 				warpPerspective(draw, warp, h_T[0], img.size());
 
@@ -973,18 +1010,17 @@ int main(int ac, char** av)
 
 			}
 
-			spin = 0;
+
 			// 3. frame swipe
 			for (int cnt = 0; cnt < str.size() - 2; cnt++) {
 
 				//SpinOn();
-			
-				spin += 360 / str.size() - 2;
+
+				cir1.SpinOn();
+				cir2.SpinOn();
 				p_img = imread(str[cnt]);
 				findHomo(cnt);
 
-				//warpPerspective(img, drawimg, h[cnt], drawimg.size());	
-				// setMouseCallback("Result", onMouse);
 
 				draw = Mat::zeros(img.size(), img.type());
 				warp = Mat::zeros(img.size(), img.type());
@@ -1008,12 +1044,13 @@ int main(int ac, char** av)
 			frame_end = imread(str[str.size() - 1]);
 
 			findHomo(str.size() - 1);
-			for (int i = 0; i < time_ani; i++)
+			for (int i = 0; i < sh.mTime_ani_; i++)
 			{
-				SpinOn();
-				tri.Disppear(time_ani);
-				cir1.Disppear(time_ani);
-				cir2.Disppear(time_ani);
+				cir1.SpinOn();
+				cir2.SpinOn();
+				tri.Disppear(sh.mTime_ani_);
+				cir1.Disppear(sh.mTime_ani_);
+				cir2.Disppear(sh.mTime_ani_);
 
 				setMouseCallback("Result", onMouse);
 
@@ -1054,6 +1091,7 @@ int main(int ac, char** av)
 void findHomo(int n)
 {
 
+	parseJson parse;
 	parse.parsing_json();
 
 	for (int i = 0; i < 4; i++) {
@@ -1073,15 +1111,6 @@ void findHomo(int n)
 
 	vector<Point2d> pts_src, pts_dst;
 
-	//for (size_t i(0); i < 4; i++) {
-	//	pts_src.push_back(Point2d(pointX[i], pointY[i]));
-	//	pts_dst.push_back(Point2d(wpointX[i], wpointY[i]));
-	//	//pts_dst.push_back(Point2d(newpointX[i], newpointY[i]));
-	//}
-	//for (size_t i(0); i < 4; i++) {
-	//	pts_src.push_back(Point2d(pointX[n][i], pointY[n][i]));
-	//	pts_dst.push_back(Point2d(wpointX[i], wpointY[i]));
-	//}
 
 	for (size_t i(0); i < 4; i++) {
 		pts_src.push_back(Point2d(pX[n][i], pY[n][i]));
@@ -1142,44 +1171,49 @@ void showImg(string filename, Mat img, float factor)
 
 void Circle::Draw(Mat plane)
 {
-	//double theta = atan2(c.y - c.ey, c.x - c.ex) * 180.0 / CV_PI;
+
 	int beta = 15; //beta는 360의 약수, 점선의 간격을 설정
 
-	//Shape::setColor(color, &rgb);
-	SetColor(color, &rgb);
-	SetColor(color2, &rgb2);
+	SetColor(mColor_spin, &spin_rgb);
+	SetColor(mColor_, &rgb);
 
-	thick = 4;
-	double hole = rad * (10 - 4) / 10.0;
 
-	switch (circle_type)
+	mThickness_ = 4;
+	double hole = mRadius_ * (10 - 4) / 10.0;
+
+	Point center = mCenter_;
+	int rad = mRadius_;
+	int spin = mSpin_;
+
+
+	switch (test.circle_type)
 	{
 	case 0:
-		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, 16);
-		ellipse(plane, Point(center), Size(rad + 2, rad + 2), spin - 30, 0, 60, Scalar(0, 0, 0), -1, 16);
-		ellipse(plane, Point(center), Size(rad, rad), spin - 30, 0, 60, rgb2, -1, 16);
-		ellipse(plane, Point(center), Size(hole, hole), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
+		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, LINE_AA);				//테두리
+		ellipse(plane, Point(center), Size(rad + 2, rad + 2), spin - 30, 0, 60, Scalar(0, 0, 0), -1, LINE_AA);	//피자모양으로 자르기
+		ellipse(plane, Point(center), Size(rad, rad), spin - 30, 0, 60, spin_rgb, -1, LINE_AA);		// 자른 영역에 다른색으로 채우기
+		ellipse(plane, Point(center), Size(hole, hole), 0, 0, 360, Scalar(0, 0, 0), -1, LINE_AA);	//가운데 뚫어주기
 		break;
 
 	case 1:
-		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, 16);
-		ellipse(plane, Point(center), Size(hole, hole), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
+		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, LINE_AA);
+		ellipse(plane, Point(center), Size(hole, hole), 0, 0, 360, Scalar(0, 0, 0), -1, LINE_AA);
 		break;
 
 	case 2:
-		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, 16);
+		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, LINE_AA);
 		for (int i = 0; i < 360 / beta; i++)
 		{
 			if (i % 2 == 0)
 			{
-				ellipse(plane, Point(center), Size(rad + 2, rad + 2), spin + beta * i, 0, beta * 0.6, Scalar(0, 0, 0), -1, 16);
+				ellipse(plane, Point(center), Size(rad + 2, rad + 2), spin + beta * i, 0, beta * 0.6, Scalar(0, 0, 0), -1, LINE_AA);
 			}
 		}
-		ellipse(plane, Point(center), Size(rad*0.7,rad*0.7), 0, 0, 360, Scalar(0, 0, 0), -1, 16);
+		ellipse(plane, Point(center), Size(rad * 0.7, rad * 0.7), 0, 0, 360, Scalar(0, 0, 0), -1, LINE_AA);
 		break;
 
 	case 3:
-		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, 16);
+		ellipse(plane, Point(center), Size(rad, rad), 0, 0, 360, rgb, -1, LINE_AA);
 		break;
 
 	case 4:
@@ -1193,10 +1227,10 @@ void Circle::Draw(Mat plane)
 void Arrow::Draw(Mat plane, Point e)
 {
 	// drawing과 삼각형위치 계산을 위한 Angle 계산
-	if (Start.x == End.x)
+	if (mStart_.x == mEnd_.x)
 	{
 		//rx = 0;
-		if (End.y > Start.y)
+		if (mEnd_.y > mStart_.y)
 			angle = CV_PI / 2.0;
 		//ry = rad;
 		else
@@ -1204,34 +1238,34 @@ void Arrow::Draw(Mat plane, Point e)
 		//	ry = -rad;
 	}
 	else {
-		angle = atan(double(abs(End.y - Start.y)) / double(abs(End.x - Start.x)));
-		if (End.x > Start.x && End.y >= Start.y)
+		angle = atan(double(abs(mEnd_.y - mStart_.y)) / double(abs(mEnd_.x - mStart_.x)));
+		if (mEnd_.x > mStart_.x && mEnd_.y >= mStart_.y)
 		{
 
 		}
-		else if (Start.x > End.x && End.y >= Start.y)
+		else if (mStart_.x > mEnd_.x && mEnd_.y >= mStart_.y)
 		{
 			angle = CV_PI - angle;
 		}
-		else if (Start.x > End.x && Start.y > End.y)
+		else if (mStart_.x > mEnd_.x && mStart_.y > mEnd_.y)
 		{
 			angle = CV_PI + angle;
 		}
-		else if (End.x > Start.x && Start.y > End.y)
+		else if (mEnd_.x > mStart_.x && mStart_.y > mEnd_.y)
 		{
 			angle = 2 * CV_PI - angle;
 		}
 	}
 
 
-	//Arrow arr;
-	//Arrow.setColor(color, &rgb);
-	SetColor(color, &rgb);
+	SetColor(mColor_, &rgb);
+	
 
+	double radius = sh.mAbs_val_();
 
-	Point pts[1][3];
+	Point pts[3];
 	double len;
-	len = sqrt(pow(e.x - (radius / 2) * cos(angle) - Start.x, 2) + pow(e.y - (radius / 2) * sin(angle) - Start.y, 2));
+	len = sqrt(pow(e.x - (radius / 2) * cos(angle) - mStart_.x, 2) + pow(e.y - (radius / 2) * sin(angle) - mStart_.y, 2));
 
 	triEx = e.x;
 	triEy = e.y;
@@ -1239,42 +1273,42 @@ void Arrow::Draw(Mat plane, Point e)
 	trip1y = triEy - radius * sin(angle + 30 * M_PI / 180);
 	trip2x = triEx - radius * cos(angle - 30 * M_PI / 180);
 	trip2y = triEy - radius * sin(angle - 30 * M_PI / 180);
-	pts[0][0] = e;
-	pts[0][1] = Point(trip1x, trip1y);
-	pts[0][2] = Point(trip2x, trip2y);
+	pts[0] = e;
+	pts[1] = Point(trip1x, trip1y);
+	pts[2] = Point(trip2x, trip2y);
 
-	const Point* ppt[1] = { pts[0] };
+	const Point* ppt[1] = { pts };
 	int npt[] = { 3 };
 
 	double p1 = len / 15.0;
 	double p2 = len / 25.0;
 
 
-	switch (line_type)
+	switch (test.line_type)
 	{
 	case 0:
-		line(plane, Point(Start.x, Start.y), Point(e.x - (radius / 2.0) * cos(angle), e.y - (radius / 2.0) * sin(angle)), rgb, thick, 16);
-		fillPoly(plane, ppt, npt, 1, rgb, 16);
+		line(plane, Point(mStart_.x, mStart_.y), Point(e.x - (sh.mAbs_val_() / 2.0) * cos(angle), e.y - (sh.mAbs_val_() / 2.0) * sin(angle)), rgb, mThick_, LINE_AA);
+		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
 		break;
 
 	case 1:
-		fillPoly(plane, ppt, npt, 1, rgb, 16);
+		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
 		for (int i = 1; i < p2; i++)
 		{
 
-			line(plane, Point(Start.x + (i - 1) * (len / p2) * cos(angle) + len / p2 * cos(angle) / 1.5,
-				Start.y + ((i - 1) * (len / p2) * sin(angle)) + len / p2 * sin(angle) / 1.5),
-				Point(Start.x + (i * (len / p2) * cos(angle)) - (radius / 2.0) * cos(angle),
-					Start.y + (i * (len / p2) * sin(angle)) - (radius / 2.0) * sin(angle)), rgb, thick * 0.8, 16);
+			line(plane, Point(mStart_.x + (i - 1) * (len / p2) * cos(angle) + len / p2 * cos(angle) / 1.5,
+				mStart_.y + ((i - 1) * (len / p2) * sin(angle)) + len / p2 * sin(angle) / 1.5),
+				Point(mStart_.x + (i * (len / p2) * cos(angle)) - (sh.mAbs_val_() / 2.0) * cos(angle),
+					mStart_.y + (i * (len / p2) * sin(angle)) - (sh.mAbs_val_() / 2.0) * sin(angle)), rgb, mThick_ * 0.8, LINE_AA);
 
 		}
 		break;
 
 	case 2:
-		fillPoly(plane, ppt, npt, 1, rgb, 16);
+		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
 		for (int i = 1; i < p1 + 1; i++)
 		{
-			circle(plane, Point(Start.x + (i - 1) * (len / p1) * cos(angle) + len / p1 * cos(angle) / 4.0, Start.y + ((i - 1) * (len / p1) * sin(angle)) + len / p1 * sin(angle) / 4.0), 4, rgb, -1, 8);
+			circle(plane, Point(mStart_.x + (i - 1) * (len / p1) * cos(angle) + len / p1 * cos(angle) / 4.0, mStart_.y + ((i - 1) * (len / p1) * sin(angle)) + len / p1 * sin(angle) / 4.0), 4, rgb, -1, LINE_AA);
 		}
 		break;
 	}
@@ -1284,35 +1318,27 @@ void Arrow::Draw(Mat plane, Point e)
 //draw 3d calib ROI 
 void Triangle::Draw(Mat dst)
 {
-	SetColor(color, &rgb);
+	SetColor(mColor_, &rgb);
 
-	Point pts[1][3];
+	Point pts[3];
 
-	pts[0][0] = wp[0];
-	pts[0][1] = wp[1];
-	pts[0][2] = wp[2];
+	pts[0] = mWarpPoint_[0];
+	pts[1] = mWarpPoint_[1];
+	pts[2] = mWarpPoint_[2];
 
-	const Point* ppt[1] = { pts[0] };
+	const Point* ppt[1] = { pts };
 	int npt[] = { 3 };
 
-	if (fill == 1)
-	{
-		fillPoly(dst, ppt, npt, 1, rgb, 8);
-	}
-	else
-	{
-		line(dst, wp[0], wp[1], rgb, thick, 8);
-		line(dst, wp[1], wp[2], rgb, thick, 8);
-		line(dst, wp[2], wp[0], rgb, thick, 8);
-	}
+	fillPoly(dst, ppt, npt, 1, rgb, 8);
+
 }
 
 
 void Arrow::Drawing(Point* p, int i)
 {
 	double dx, dy;
-	dx = round(double(Start.x + (End.x - Start.x) / pow(time_ani, 1.0 / 2.5) * pow(i + 1, 1.0 / 2.5)));
-	dy = round(double(Start.y + (End.y - Start.y) / pow(time_ani, 1.0 / 2.5) * pow(i + 1, 1.0 / 2.5)));
+	dx = round(double(mStart_.x + (mEnd_.x - mStart_.x) / pow(sh.mTime_ani_, 1.0 / 2.5) * pow(i + 1, 1.0 / 2.5)));
+	dy = round(double(mStart_.y + (mEnd_.y - mStart_.y) / pow(sh.mTime_ani_, 1.0 / 2.5) * pow(i + 1, 1.0 / 2.5)));
 
 	*p = Point(dx, dy);
 }
@@ -1353,7 +1379,7 @@ void Arrow::Drawing(Point* p, int i)
 //	}
 //}
 
-void eventclass::HandleEvent(int evt, int x, int y, int flags)
+void Eventclass::HandleEvent(int evt, int x, int y, int flags)
 {
 
 	if (evt == EVENT_LBUTTONDOWN)
@@ -1377,7 +1403,7 @@ void eventclass::HandleEvent(int evt, int x, int y, int flags)
 
 void onMouse(int evt, int x, int y, int flags, void* param)
 {
-	eventclass* p = (eventclass*)param;
+	Eventclass* p = (Eventclass*)param;
 	p->HandleEvent(evt, x, y, flags);
 }
 

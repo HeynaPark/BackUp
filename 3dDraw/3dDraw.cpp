@@ -143,7 +143,7 @@ public:
 	//double mAbsolute_val_;
 
 
-	int mTime_ani_ = 15;
+	int mTime_ani_ = 30;
 	enum COLOR { CUSTOM, RED, ORANGE, YELLOW, GREEN, BLUE, CYAN, BLACK,
 		GOLD, OLIVE, AQUAMARIN, SKYBLUE, VYOLET, PINK, MINT, BRIKRED, BROUN
 	};
@@ -153,8 +153,8 @@ public:
 	COLOR mColor_spin_;
 
 	void SetColor(COLOR c, Scalar* color);
-	void Appear(int t) { mAlpha_ += mAlpha_max_ / t; }
-	void Disppear(int t) { mAlpha_ -= mAlpha_max_ / t; }
+	void Appear(int t) { mAlpha_ += (mAlpha_max_*10 +40) / t; }		//alpha_max값을 1~11단계로 입력하는 계산식
+	void Disppear(int t) { mAlpha_ -= (mAlpha_max_ * 10 + 40) / t; }
 
 
 };
@@ -201,13 +201,13 @@ int Shape::mAbs_val_()
 	const int radiusReal = 500; // 0.5M
 
 	int radius1, radius2;
-	radius1 = (radiusReal * widPixel) / widReal;
-	radius2 = (radiusReal * heiPixel) / heiReal;
+	radius1 = double(radiusReal * widPixel) / widReal;
+	radius2 = double(radiusReal * heiPixel) / heiReal;
 
 	return  radius1 + radius2;
 
 }
-
+ 
 
 class Circle :public Shape {
 
@@ -219,6 +219,7 @@ public:
 	int mSpin_;
 	int mRadius_;
 	int mRadius_start;
+	int mRadius_end;
 	//int mCircle_type_;
 	
 	int mThickness_;
@@ -229,6 +230,7 @@ public:
 	void Draw(Mat dst);
 	void SpinOn() { mSpin_ += 360 / mTime_ani_; }
 	void expandRad(int t, int r) { mRadius_ = ((1.0 - mRadius_start) * t / mTime_ani_ + mRadius_start) * r; }
+	void contracRad(int t, int r) { mRadius_ = ((mRadius_end - 1.0) * t / mTime_ani_ + 1.0) * r; cout << "contract" << (mRadius_end - 1.0) * t / mTime_ani_  << endl; }
 
 	//vector<Point> p;
 };
@@ -239,17 +241,23 @@ class Arrow :public Shape
 {
 
 private:
-	double angle;
+	
 	double triEx, triEy;					//삼각형 끝 포인트
 	double trip1x, trip1y, trip2x, trip2y;	//삼각형 나머지 두 포인트
+	double angle;
 public:
-	Point2d mStart_, mEnd_;
+
+	Point mStart_, mEnd_;
+	Point mSetStart_, mSetEnd_;
+	int mSetStart_Flag_, mSetEnd_Flag_;
+	
 
 	int mThick_;
 	enum class arrType { SOLID, DOTTED_LONG, DOTTED_SHORT };
 	int mArrType_;
 	void Draw(Mat plane, Point2d e);
 	void Drawing(Point2d* p, int i);
+	void CalcSetPos(Point p, Point* calcP);
 
 };
 
@@ -391,7 +399,31 @@ void Shape::SetColor(COLOR c, Scalar* color) {
 		break;
 
 	case AQUAMARIN:
-		r = 127, 255, 212;
+		r = 127, g =255, b=212;
+		rgb = Scalar((255 - b) / 255.0 * alpha, (255 - g) / 255.0 * alpha, (255 - r) / 255.0 * alpha);
+		break;
+	case GOLD:
+		r = 255,g = 215, b=0;
+		rgb = Scalar((255 - b) / 255.0 * alpha, (255 - g) / 255.0 * alpha, (255 - r) / 255.0 * alpha);
+		break;
+	case OLIVE:
+		r = 85, g =107 , b =47;
+		rgb = Scalar((255 - b) / 255.0 * alpha, (255 - g) / 255.0 * alpha, (255 - r) / 255.0 * alpha);
+		break;
+	case SKYBLUE:
+		r = 135, g = 206, b = 250;
+		rgb = Scalar((255 - b) / 255.0 * alpha, (255 - g) / 255.0 * alpha, (255 - r) / 255.0 * alpha);
+		break;
+	case MINT:
+		r = 0, g = 206, b = 209;
+		rgb = Scalar((255 - b) / 255.0 * alpha, (255 - g) / 255.0 * alpha, (255 - r) / 255.0 * alpha);
+		break;
+	case VYOLET:
+		r = 0, g = 206, b = 209;
+		rgb = Scalar((255 - b) / 255.0 * alpha, (255 - g) / 255.0 * alpha, (255 - r) / 255.0 * alpha);
+		break;
+	case PINK:
+		r = 0, g = 206, b = 209;
 		rgb = Scalar((255 - b) / 255.0 * alpha, (255 - g) / 255.0 * alpha, (255 - r) / 255.0 * alpha);
 		break;
 	}
@@ -448,7 +480,7 @@ int main(int ac, char** av)
 					   
 	selPoint[4] = Point(519, 593);	//arr2.s
 	selPoint[5] = Point(1137, 536);	//arr2.e
-	selPoint[6] = Point(1261, 500);
+	selPoint[6] = Point(961, 492);
 					   
 	selPoint[7] = Point(715, 773);	//tri
 	selPoint[8] = Point(1261, 499);	//goal area 1
@@ -523,27 +555,29 @@ int main(int ac, char** av)
 		/*	Circle1	*/
 		cir1.mCenter_ = wPoint[0];
 		cir1.mColor_ = 
-		cir1.mColor_spin_ = Circle::AQUAMARIN;
+		cir1.mColor_spin_ = Circle::MINT;
 		cir1.mCircle_type_ = Circle::CIRCLE_SPIN;
 		cir1.mRadius_ = sh.mAbs_val_();
 		cir1.mRadius_start = 0.5;
+		cir1.mRadius_end = 0.7;
 		cir1.mThickness_ = cir1.mRadius_ * 0.5;
-		cir1.mAlpha_max_ = test.max_alpha;
+		cir1.mAlpha_max_ = 7;
 
 		/*	Circle2	*/
 		cir2.mCenter_ = wPoint[1];
-		cir2.mColor_ = Circle::CUSTOM;
-		cir2.mColor_spin_ = Circle::BLUE;
+		cir2.mColor_ = Circle::OLIVE;
+		cir2.mColor_spin_ = Circle::AQUAMARIN;
 		cir2.mCircle_type_ = Circle::CIRCLE_DOTTED;
 		cir2.mRadius_ = sh.mAbs_val_();
 		cir2.mRadius_start = 0.7;
+		cir1.mRadius_end = 0.9;
 		cir2.mThickness_ = cir2.mRadius_ * 0.5;
-		cir2.mAlpha_max_ = test.max_alpha;
+		cir2.mAlpha_max_ = 6;
 
 
 		/*	Triangle	*/
 		tri.mWarpPoint_ = { Point(240, 413), Point(362, 708), Point(425, 709) };
-		tri.mAlpha_max_ = 150;
+		tri.mAlpha_max_ = 5;
 		tri.mColor_ = Triangle::YELLOW;
 		//tri.mThick_ = 3;
 
@@ -551,30 +585,43 @@ int main(int ac, char** av)
 		/*	Arrow1	*/
 		double line_thick = 0.4;
 
-	/*	if (test.line_type == 0)
-			arr1.mType_ = Arrow::mLine_type_::SOLID;
-		else if (test.line_type == 1)
-			arr1.mType_ =  Arrow::mLine_type_::DOTTED_LONG; 
-		else if (test.line_type == 2)
-			arr1.mType_ =  Arrow::mLine_type_::DOTTED_SHORT;*/
-
+	
+		//template의 circle center값과 arrow 값이 같을 경우 계산된 포인트를 넣어주어야함
 		
-		arr1.mStart_ = wPoint[2];
-		arr1.mEnd_ = wPoint[3];
+		arr1.mStart_ = wPoint[0];
+		arr1.mEnd_ = wPoint[1];
+
+		if (cir1.mCenter_ == arr1.mStart_)
+		{
+			//arr1.mStart_ = arr1.mSetStart_;
+			arr1.mSetStart_Flag_ = true;
+		}
+		if (cir2.mCenter_ == arr1.mEnd_)
+		{
+			arr1.mSetEnd_Flag_ = true;
+			//arr1.mEnd_ = arr1.mSetEnd_;
+		}
+
+
+
 		arr1.mArrType_ = test.line_type;
 		
 		arr1.mThick_ = cir1.mRadius_ * line_thick;
-		arr1.mColor_ = Arrow::BLUE;
-		arr1.mAlpha_max_ = 60;
+		arr1.mColor_ = Arrow::GOLD;
+		arr1.mAlpha_max_ = 7;
 	
 
 		/*	Arrow2	*/
+
 		arr2.mStart_ = wPoint[4];
+		if (cir2.mCenter_ == arr2.mStart_)
+			arr2.mSetStart_Flag_ = true;
+			//arr2.mStart_ = arr2.mSetStart_;
 		arr2.mEnd_ = wPoint[5];
 		arr2.mArrType_ = test.line_type;
 		arr2.mThick_ = cir1.mRadius_ * line_thick;
 		arr2.mColor_ = Arrow::GREEN;
-		arr2.mAlpha_max_ = 40;
+		arr2.mAlpha_max_ = 8;
 
 		/* 2 Circle and 1 Arrow */
 
@@ -698,7 +745,7 @@ int main(int ac, char** av)
 				waitKey(1);
 
 			}
-			waitKey(0);
+			waitKey(1);
 
 			// 3. frame swipe
 			for (int cnt = 0; cnt < str.size() - 2; cnt++) {
@@ -741,7 +788,8 @@ int main(int ac, char** av)
 				cir1.Disppear(sh.mTime_ani_);
 				cir2.Disppear(sh.mTime_ani_);
 				arr1.Disppear(sh.mTime_ani_);
-
+				cir1.contracRad(i, sh.mAbs_val_());
+				cir2.contracRad(i, sh.mAbs_val_());
 
 				setMouseCallback("Result", onMouse);
 
@@ -1210,7 +1258,15 @@ void Circle::Draw(Mat plane)
 	}
 }
 
-//void Arrow::Draw(Mat plane, double dx, double dy)
+
+void Arrow::CalcSetPos(Point p, Point* calcP)
+{
+	double x, y;
+	x = p.x + mAbs_val_() * cos(angle);
+	y = p.x + mAbs_val_() * sin(angle);
+	*calcP = Point(x, y);
+}
+
 void Arrow::Draw(Mat plane, Point2d e)
 {
 	// drawing과 삼각형위치 계산을 위한 Angle 계산
@@ -1245,66 +1301,87 @@ void Arrow::Draw(Mat plane, Point2d e)
 	}
 
 	SetColor(mColor_, &rgb);
-	
+
+
+
+	Point start, end;
 
 	double radius = sh.mAbs_val_();
 
+	mSetStart_.x = mStart_.x + radius * cos(angle);
+	mSetStart_.y = mStart_.y + radius * sin(angle);
+
+	mSetEnd_.x = e.x - radius * cos(angle);
+	mSetEnd_.y = e.y - radius * sin(angle);
+
+	if (mSetStart_Flag_)
+		start = mSetStart_;
+	else
+		start = mStart_;
+
+	if (mSetEnd_Flag_)
+		end = mSetEnd_;
+	else
+		end = e;
+
 	Point pts[3];
 	double len;
-	len = sqrt(pow(e.x - (radius / 2.0) * cos(angle) - mStart_.x, 2) + pow(e.y - (radius / 2.0) * sin(angle) - mStart_.y, 2));
+	len = sqrt(pow(end.x - (radius / 2.0) * cos(angle) - start.x, 2) + pow(end.y - (radius / 2.0) * sin(angle) - start.y, 2));
 
-	triEx = e.x;
-	triEy = e.y;
+
+
+	triEx = end.x;
+	triEy = end.y;
 	trip1x = triEx - radius * cos(angle + 30 * M_PI / 180);
 	trip1y = triEy - radius * sin(angle + 30 * M_PI / 180);
 	trip2x = triEx - radius * cos(angle - 30 * M_PI / 180);
 	trip2y = triEy - radius * sin(angle - 30 * M_PI / 180);
-	pts[0] = e;
+	pts[0] = end;
 	pts[1] = Point(trip1x, trip1y);
 	pts[2] = Point(trip2x, trip2y);
 
 	const Point* ppt[1] = { pts };
 	int npt[] = { 3 };
 
-	
+
 	static double p = 20.0;
-	double move_end_X = (sh.mAbs_val_() / 2.0) * cos(angle);
-	double move_end_Y = (sh.mAbs_val_() / 2.0) * sin(angle);
+	double move_end_X = (sh.mAbs_val_() / 1.5) * cos(angle);
+	double move_end_Y = (sh.mAbs_val_() / 1.5) * sin(angle);
 
 
-	
-	
 	switch (mArrType_)
 	{
 	case static_cast<int>(Arrow::arrType::SOLID):
-		
 
-		line(plane, Point2d(mStart_.x, mStart_.y), Point2d(e.x - move_end_X, e.y - move_end_Y), rgb, mThick_, LINE_AA);
+
+		line(plane, Point(start.x, start.y), Point(round(end.x - move_end_X), round(end.y - move_end_Y)), rgb, mThick_, LINE_AA);
 		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
+		//line(plane, Point(mStart_.x, mStart_.y), Point(round(e.x), round(e.y )), rgb, mThick_ / 3.0, LINE_AA);
+		//circle(plane, Point(e.x, e.y), 3, rgb, -1, 8);
 
-		cout << "ex: " << Point2d(e.x , e.y ) << endl;
+		//cout << "ex: " << Point(round(e.x - move_end_X), round(e.y - move_end_Y)) << endl;
 		//cout << "mex: " << Point2d( move_end_X,  move_end_Y) << endl;
 		//cout << "end point: " << Point2d(e.x - move_end_X, e.y - move_end_Y) << endl;
 		break;
 
 	case static_cast<int>(Arrow::arrType::DOTTED_LONG):
 		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
-		for (int i = 1; i < len/p; i++)
+		for (int i = 1; i < len / p; i++)
 		{
 
-			line(plane, Point(mStart_.x + (i - 1) * p * cos(angle) + p * cos(angle) / 1.5,
-				mStart_.y + ((i - 1) * p * sin(angle)) + p * sin(angle) / 1.5),
-				Point(mStart_.x + (i * p * cos(angle)) - (sh.mAbs_val_() / 2.0) * cos(angle),
-					mStart_.y + (i * p * sin(angle)) - (sh.mAbs_val_() / 2.0) * sin(angle)), rgb, mThick_ * 0.8, LINE_AA);
+			line(plane, Point(start.x + (i - 1) * p * cos(angle) + p * cos(angle) / 1.5,
+				start.y + ((i - 1) * p * sin(angle)) + p * sin(angle) / 1.5),
+				Point(start.x + (i * p * cos(angle)) - (sh.mAbs_val_() / 2.0) * cos(angle),
+					start.y + (i * p * sin(angle)) - (sh.mAbs_val_() / 2.0) * sin(angle)), rgb, mThick_ * 0.8, LINE_AA);
 
 		}
 		break;
 
 	case static_cast<int>(Arrow::arrType::DOTTED_SHORT):
 		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
-		for (int i = 1; i <len/p+1; i++)
+		for (int i = 1; i < len / p + 1; i++)
 		{
-			circle(plane, Point(mStart_.x + (i - 1) * p * cos(angle) +p * cos(angle) / 4.0, mStart_.y + ((i - 1) * p * sin(angle)) + p * sin(angle) / 4.0), sh.mAbs_val_()/5.0, rgb, -1, LINE_AA);
+			circle(plane, Point(start.x + (i - 1) * p * cos(angle) + p * cos(angle) / 4.0, start.y + ((i - 1) * p * sin(angle)) + p * sin(angle) / 4.0), sh.mAbs_val_() / 5.0, rgb, -1, LINE_AA);
 		}
 		break;
 
@@ -1312,6 +1389,131 @@ void Arrow::Draw(Mat plane, Point2d e)
 		break;
 	}
 }
+
+//void Arrow::Draw(Mat plane, double dx, double dy)
+//void Arrow::Draw(Mat plane, Point2d e)
+//{
+//	// drawing과 삼각형위치 계산을 위한 Angle 계산
+//	if (mStart_.x == mEnd_.x)
+//	{
+//		//rx = 0;
+//		if (mEnd_.y > mStart_.y)
+//			angle = CV_PI / 2.0;
+//		//ry = rad;
+//		else
+//			angle = CV_PI * (3.0 / 2.0);
+//		//	ry = -rad;
+//	}
+//	else {
+//		angle = atan(double(abs(mEnd_.y - mStart_.y)) / double(abs(mEnd_.x - mStart_.x)));
+//		if (mEnd_.x > mStart_.x && mEnd_.y >= mStart_.y)
+//		{
+//
+//		}
+//		else if (mStart_.x > mEnd_.x && mEnd_.y >= mStart_.y)
+//		{
+//			angle = CV_PI - angle;
+//		}
+//		else if (mStart_.x > mEnd_.x && mStart_.y > mEnd_.y)
+//		{
+//			angle = CV_PI + angle;
+//		}
+//		else if (mEnd_.x > mStart_.x && mStart_.y > mEnd_.y)
+//		{
+//			angle = 2 * CV_PI - angle;
+//		}
+//	}
+//
+//	SetColor(mColor_, &rgb);
+//	
+//	
+//
+//
+//
+//	double radius = sh.mAbs_val_();
+//
+//	mSetStart_ = mStart_;
+//	mSetEnd_ = mEnd_;
+//
+//	if (mSetStart_Flag_)
+//	{
+//		 
+//		mStart_.x = radius * cos(angle);
+//		mStart_.y = radius * sin(angle);
+//	}
+//	if (mSetEnd_Flag_)
+//	{
+//		mEnd_.x -= radius * cos(angle);
+//		mEnd_.y -= radius * sin(angle);
+//	}
+//	Point pts[3];
+//	double len;
+//	len = sqrt(pow(e.x - (radius / 2.0) * cos(angle) - mStart_.x, 2) + pow(e.y - (radius / 2.0) * sin(angle) - mStart_.y, 2));
+//
+//
+//
+//	triEx = e.x;
+//	triEy = e.y;
+//	trip1x = triEx - radius * cos(angle + 30 * M_PI / 180);
+//	trip1y = triEy - radius * sin(angle + 30 * M_PI / 180);
+//	trip2x = triEx - radius * cos(angle - 30 * M_PI / 180);
+//	trip2y = triEy - radius * sin(angle - 30 * M_PI / 180);
+//	pts[0] = e;
+//	pts[1] = Point(trip1x, trip1y);
+//	pts[2] = Point(trip2x, trip2y);
+//
+//	const Point* ppt[1] = { pts };
+//	int npt[] = { 3 };
+//
+//	
+//	static double p = 20.0;
+//	double move_end_X = (sh.mAbs_val_() / 1.5) * cos(angle);
+//	double move_end_Y = (sh.mAbs_val_() / 1.5) * sin(angle);
+//
+//
+//	double k = atan2(e.y-mStart_.y, e.x-mStart_.x);
+//	double j = atan2(e.y, e.x );
+//	
+//	switch (mArrType_)
+//	{
+//	case static_cast<int>(Arrow::arrType::SOLID):
+//		
+//
+//		line(plane, Point(mStart_.x, mStart_.y), Point(round(e.x - move_end_X), round(e.y - move_end_Y)), rgb, mThick_, LINE_AA);
+//		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
+//		//line(plane, Point(mStart_.x, mStart_.y), Point(round(e.x), round(e.y )), rgb, mThick_ / 3.0, LINE_AA);
+//		//circle(plane, Point(e.x, e.y), 3, rgb, -1, 8);
+//		
+//		//cout << "ex: " << Point(round(e.x - move_end_X), round(e.y - move_end_Y)) << endl;
+//		//cout << "mex: " << Point2d( move_end_X,  move_end_Y) << endl;
+//		//cout << "end point: " << Point2d(e.x - move_end_X, e.y - move_end_Y) << endl;
+//		break;
+//
+//	case static_cast<int>(Arrow::arrType::DOTTED_LONG):
+//		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
+//		for (int i = 1; i < len/p; i++)
+//		{
+//
+//			line(plane, Point(mStart_.x + (i - 1) * p * cos(angle) + p * cos(angle) / 1.5,
+//				mStart_.y + ((i - 1) * p * sin(angle)) + p * sin(angle) / 1.5),
+//				Point(mStart_.x + (i * p * cos(angle)) - (sh.mAbs_val_() / 2.0) * cos(angle),
+//					mStart_.y + (i * p * sin(angle)) - (sh.mAbs_val_() / 2.0) * sin(angle)), rgb, mThick_ * 0.8, LINE_AA);
+//
+//		}
+//		break;
+//
+//	case static_cast<int>(Arrow::arrType::DOTTED_SHORT):
+//		fillPoly(plane, ppt, npt, 1, rgb, LINE_AA);
+//		for (int i = 1; i <len/p+1; i++)
+//		{
+//			circle(plane, Point(mStart_.x + (i - 1) * p * cos(angle) +p * cos(angle) / 4.0, mStart_.y + ((i - 1) * p * sin(angle)) + p * sin(angle) / 4.0), sh.mAbs_val_()/5.0, rgb, -1, LINE_AA);
+//		}
+//		break;
+//
+//	default:
+//		break;
+//	}
+//}
 
 
 //draw 3d calib ROI 
@@ -1336,8 +1538,15 @@ void Triangle::Draw(Mat dst)
 void Arrow::Drawing(Point2d* p, int i)
 {
 	double dx, dy;
-	dx = double(mStart_.x + (mEnd_.x - mStart_.x) / pow(sh.mTime_ani_, 1.0 / 2.5) * pow(i+1, 1.0 / 2.5));
-	dy = double(mStart_.y + (mEnd_.y - mStart_.y) / pow(sh.mTime_ani_, 1.0 / 2.5) * pow(i+1, 1.0 / 2.5));
+	double time = sh.mTime_ani_;
+	//dx = double(mStart_.x + (mEnd_.x - mStart_.x) / pow(time, 2) * pow(i, 2));
+	//dy = double(mStart_.y + (mEnd_.y - mStart_.y) / pow(time, 2) * pow(i, 2));
+	double d = 0.1;
+	dy = double(mStart_.y + (mEnd_.y - mStart_.y) * ((1.0 - d) * pow((i+1) / time, 2) + d));
+	dx = double(mStart_.x + (mEnd_.x - mStart_.x) * ((1.0 - d) * pow((i+1) / time, 2) + d));
+	//dx = double(mStart_.x + (mEnd_.x - mStart_.x) * double((i+1) / time));
+	//dy = double(mStart_.y + (mEnd_.y - mStart_.y) * double((i+1) / time));
+	//cout << "i/t " << double(i / time) << endl;
 
 	//dx = round(double(mStart_.x + (mEnd_.x - mStart_.x) / pow(sh.mTime_ani_/(i + 1), 1.0 / 2.5)));
 	//dy = round(double(mStart_.y + (mEnd_.y - mStart_.y) / pow(sh.mTime_ani_/(i + 1), 1.0 / 2.5)));
